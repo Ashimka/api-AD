@@ -13,7 +13,7 @@ export function generateJwtToken(user: User) {
   });
 }
 
-const isTokenValid = (token: jwt.JwtPayload | string) => {
+const isTokenValid = (token: unknown): token is jwt.JwtPayload => {
   if (
     typeof token === 'object' &&
     token !== null &&
@@ -26,17 +26,24 @@ const isTokenValid = (token: jwt.JwtPayload | string) => {
   return false;
 };
 
-export function getJwtTokenFromHeaders(request: Request) {
-  const token = request.headers.get('Authorization')?.split(' ')[1];
+export function getJwtTokenFromHeaders(request: Request): jwt.JwtPayload {
+  const header = request.headers.get('Authorization');
+  const token = header?.split(' ')[1];
 
   if (!token) {
     throw new Error('No token found');
   }
 
-  const decodedToken = jwt.verify(token, config.jwtSecret);
+  let decoded: unknown;
+  try {
+    decoded = jwt.verify(token, config.jwtSecret);
+  } catch (error) {
+    console.error('JWT verification failed:', error);
+    throw new Error('Invalid or expired token');
+  }
 
-  if (isTokenValid(decodedToken)) {
-    return decodedToken;
+  if (isTokenValid(decoded)) {
+    return decoded as jwt.JwtPayload;
   }
 
   throw new Error('Invalid token payload');
