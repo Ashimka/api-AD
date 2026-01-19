@@ -54,7 +54,10 @@ export function getJwtTokenFromHeaders(request: Request): jwt.JwtPayload {
   throw new AuthenticationError('Invalid token payload');
 }
 
-export function refreshAccessToken(refreshToken: string): string {
+export function refreshAccessToken(refreshToken: string): {
+  accessToken: string;
+  refreshToken: string;
+} {
   let decoded: unknown;
   try {
     decoded = jwt.verify(refreshToken, config.jwtSecret);
@@ -67,11 +70,15 @@ export function refreshAccessToken(refreshToken: string): string {
     throw new AuthenticationError('Invalid refresh token payload');
   }
 
-  const newAccessToken = jwt.sign(
-    { id: decoded.id, email: decoded.email },
-    config.jwtSecret,
-    { expiresIn: 60 * 60 * 24 * 30 }, // 1 месяц
-  );
+  const tokenPayload = { id: decoded.id, email: decoded.email };
 
-  return newAccessToken;
+  const newAccessToken = jwt.sign(tokenPayload, config.jwtSecret, {
+    expiresIn: 60 * 60 * 24 * 30, // 1 месяц
+  });
+
+  const newRefreshToken = jwt.sign(tokenPayload, config.jwtSecret, {
+    expiresIn: 60 * 60 * 24 * 365, // 1 год
+  });
+
+  return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 }
