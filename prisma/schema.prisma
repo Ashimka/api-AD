@@ -20,10 +20,21 @@ model User {
 
   car UserCarData[]
 
-  codeActivate String?  @map("code_activate")
-  createdAt    DateTime @default(now()) @map("created_at")
+  codeActivate AuthCode?
+  createdAt    DateTime  @default(now()) @map("created_at")
 
   @@map("users")
+}
+
+model AuthCode {
+  id        String   @id @default(cuid(2))
+  code      String
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime @map("expires_at")
+  userId    String   @unique @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("auth_codes")
 }
 
 model UserCarData {
