@@ -1,8 +1,20 @@
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 import type { User } from '~/../generated/prisma/client.js';
 import { config } from '~/config/index.js';
 import { AuthenticationError } from '~/errors/index.js';
+
+export async function hashPassword(password: string) {
+  return await bcrypt.hash(password, 10);
+}
+
+export async function getIsPasswordValid(
+  password: string,
+  hashedPassword: string,
+) {
+  return await bcrypt.compare(password, hashedPassword);
+}
 
 export function generateJwtToken(user: User) {
   const tokenPayload = {
