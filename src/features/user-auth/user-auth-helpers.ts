@@ -1,7 +1,7 @@
+import type { User } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-import type { User } from '~/../generated/prisma/client.js';
 import { config } from '~/config/index.js';
 import { AuthenticationError } from '~/errors/index.js';
 
