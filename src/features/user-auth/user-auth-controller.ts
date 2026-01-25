@@ -9,7 +9,7 @@ import { hashPassword } from './user-auth-helpers.js';
 import { saveAuthCodeToDatabase } from './user-auth-model.js';
 // import { generateJwtToken } from './user-auth-helpers.js';
 
-export async function register(request: Request, response: Response) {
+export async function signInOrCreateUser(request: Request, response: Response) {
   const body = await validateBody(
     z.object({
       email: z.email(),

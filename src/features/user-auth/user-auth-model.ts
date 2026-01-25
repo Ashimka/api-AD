@@ -22,7 +22,8 @@ export async function saveAuthCodeToDatabase(
 
     return result;
   } catch (error) {
-    console.error('Detailed error:', error);
+    console.error('Database error in saveAuthCodeToDatabase:', error);
+    // Ошибка будет обработана глобальным errorHandler
     throw error;
   }
 }

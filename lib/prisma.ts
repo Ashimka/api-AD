@@ -11,3 +11,25 @@ const pool = new Pool({
 const adapter = new PrismaPg(pool);
 
 export const prisma = new PrismaClient({ adapter });
+
+/**
+ * Проверяет подключение к базе данных
+ * @throws {Error} Если подключение не удалось
+ */
+export async function checkDatabaseConnection(): Promise<void> {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch (error) {
+    throw new Error(
+      `Не удалось подключиться к базе данных: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
+  }
+}
+
+/**
+ * Закрывает подключение к базе данных
+ */
+export async function disconnectDatabase(): Promise<void> {
+  await prisma.$disconnect();
+  await pool.end();
+}

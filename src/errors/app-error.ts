@@ -48,3 +48,13 @@ export class ValidationError extends AppError {
     Object.setPrototypeOf(this, ValidationError.prototype);
   }
 }
+
+/**
+ * Ошибка базы данных (503 Service Unavailable)
+ */
+export class DatabaseError extends AppError {
+  constructor(message: string = 'Database connection failed') {
+    super(message, 503, true);
+    Object.setPrototypeOf(this, DatabaseError.prototype);
+  }
+}
