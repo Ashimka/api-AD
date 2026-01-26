@@ -23,7 +23,22 @@ export async function saveAuthCodeToDatabase(
     return result;
   } catch (error) {
     console.error('Database error in saveAuthCodeToDatabase:', error);
-    // Ошибка будет обработана глобальным errorHandler
+
     throw error;
   }
+}
+
+export async function incrementAuthAttempts(userId: AuthCode['userId']) {
+  return await prisma.authCode.update({
+    where: { userId },
+    data: { attempts: { increment: 1 } },
+    select: { attempts: true },
+  });
+}
+
+export async function resetAuthAttempts(userId: AuthCode['userId']) {
+  return prisma.authCode.update({
+    where: { userId },
+    data: { attempts: 0 },
+  });
 }
