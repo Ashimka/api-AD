@@ -1,9 +1,9 @@
-import type { NextFunction, Request, Response } from 'express';
 import {
-  PrismaClientKnownRequestError,
   PrismaClientInitializationError,
+  PrismaClientKnownRequestError,
   PrismaClientRustPanicError,
 } from '@prisma/client-runtime-utils';
+import type { NextFunction, Request, Response } from 'express';
 
 import { AppError, DatabaseError } from '~/errors/index.js';
 

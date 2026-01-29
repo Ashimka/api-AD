@@ -1,8 +1,12 @@
 import morgan from 'morgan';
 
+import {
+  checkDatabaseConnection,
+  disconnectDatabase,
+} from '~/../lib/prisma.js';
+
 import { buildApp } from './app.js';
 import { config } from './config/index.js';
-import { checkDatabaseConnection, disconnectDatabase } from '~/../lib/prisma.js';
 
 const PORT = config.port;
 
@@ -51,4 +55,4 @@ async function startServer() {
   }
 }
 
-startServer();
+await startServer();

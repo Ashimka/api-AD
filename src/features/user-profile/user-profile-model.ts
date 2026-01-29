@@ -19,6 +19,7 @@ export async function retrieveUserFromDatabaseByEmail(email: User['email']) {
       codeActivate: {
         select: {
           code: true,
+          expiresAt: true,
         },
       },
     },

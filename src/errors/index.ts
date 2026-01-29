@@ -2,6 +2,6 @@ export {
   AppError,
   AuthenticationError,
   AuthorizationError,
-  ValidationError,
   DatabaseError,
+  ValidationError,
 } from './app-error.js';
