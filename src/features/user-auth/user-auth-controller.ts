@@ -10,13 +10,16 @@ import {
   retrieveUserFromDatabaseByEmail,
   saveUserToDatabase,
 } from '../user-profile/user-profile-model.js';
-import { getIsPasswordValid, hashPassword } from './user-auth-helpers.js';
+import {
+  generateJwtToken,
+  getIsPasswordValid,
+  hashPassword,
+} from './user-auth-helpers.js';
 import {
   incrementAuthAttempts,
   resetAuthAttempts,
   saveAuthCodeToDatabase,
 } from './user-auth-model.js';
-// import { generateJwtToken } from './user-auth-helpers.js';
 
 export async function signInOrCreateUser(request: Request, response: Response) {
   const body = await validateBody(
@@ -93,8 +96,11 @@ export async function verifyEmailCode(request: Request, response: Response) {
   if (isCodeValid) {
     await isActivatedUser(body.email);
     await resetAuthAttempts(user.id);
-
-    return response.status(200).json({ message: 'Код успешно проверен' });
+    // после успешной проверки выдаём пару токенов
+    const tokens = generateJwtToken(user);
+    return response
+      .status(200)
+      .json({ message: 'Код успешно проверен', tokens });
   }
 
   // 4. Код невалидный → увеличиваем количество попыток

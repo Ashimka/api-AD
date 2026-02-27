@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken';
 import { config } from '~/config/index.js';
 import { AuthenticationError } from '~/errors/index.js';
 
+type JwtPayload = Pick<User, 'id' | 'email'>;
+
 export async function hashPassword(password: string) {
   return await bcrypt.hash(password, 10);
 }
@@ -16,7 +18,7 @@ export async function getIsPasswordValid(
   return await bcrypt.compare(password, hashedPassword);
 }
 
-export function generateJwtToken(user: User) {
+export function generateJwtToken(user: JwtPayload) {
   const tokenPayload = {
     id: user.id,
     email: user.email,
