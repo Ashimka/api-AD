@@ -49,7 +49,11 @@ export async function verifyEmailCode(request: Request, response: Response) {
   const body = await validateBody(
     z.object({
       email: z.email().trim(),
-      code: z.string().length(6).trim(),
+      code: z
+        .string()
+        .trim()
+        .nonempty({ message: 'Код не может быть пустым' })
+        .length(6, { message: 'Код должен состоять из 6 символов' }),
     }),
     request,
     response,
