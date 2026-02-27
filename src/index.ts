@@ -1,9 +1,6 @@
 import morgan from 'morgan';
 
-import {
-  checkDatabaseConnection,
-  disconnectDatabase,
-} from '~/../lib/prisma.js';
+import { disconnectDatabase } from '~/../lib/prisma.js';
 
 import { buildApp } from './app.js';
 import { config } from './config/index.js';
@@ -12,11 +9,6 @@ const PORT = config.port;
 
 async function startServer() {
   try {
-    // Проверка подключения к базе данных перед запуском сервера
-    console.log('Проверка подключения к базе данных...');
-    await checkDatabaseConnection();
-    console.log('✓ Подключение к базе данных установлено');
-
     const app = buildApp();
 
     const environment = process.env.NODE_ENV || 'development';
@@ -45,12 +37,7 @@ async function startServer() {
     process.on('SIGINT', shutdown);
   } catch (error) {
     console.error('Ошибка при запуске сервера:', error);
-    if (error instanceof Error && error.message.includes('базе данных')) {
-      console.error('Не удалось подключиться к базе данных. Убедитесь, что:');
-      console.error('1. База данных запущена');
-      console.error('2. DATABASE_URL правильно настроен в .env');
-      console.error('3. Учетные данные верны');
-    }
+
     process.exit(1);
   }
 }

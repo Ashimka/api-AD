@@ -28,22 +28,28 @@ export async function signInOrCreateUser(request: Request, response: Response) {
 
   const user = await saveUserToDatabase(body.email);
 
+  if (!user) {
+    return response
+      .status(503)
+      .json({ message: 'Ошибка при авторизации пользователя' });
+  }
+
   const code = generateSixDigitCode();
   console.log({ code });
   const hashedCode = await hashPassword(code);
 
-  await saveAuthCodeToDatabase(hashedCode, user.id);
+  await saveAuthCodeToDatabase(hashedCode, user?.id);
 
   return response
     .status(201)
-    .json({ message: 'Пользователь успешно авторизовался' });
+    .json({ message: 'Пароль отправлен на ваш email' });
 }
 
 export async function verifyEmailCode(request: Request, response: Response) {
   const body = await validateBody(
     z.object({
-      email: z.email(),
-      code: z.string().length(6),
+      email: z.email().trim(),
+      code: z.string().length(6).trim(),
     }),
     request,
     response,
@@ -85,42 +91,4 @@ export async function verifyEmailCode(request: Request, response: Response) {
   }
 
   return response.status(401).json({ message: 'Неверный код' });
-
-  // // нахожу пользователя в базе по email
-  // const user = await retrieveUserFromDatabaseByEmail(body.email);
-
-  // // проверяю валидность кода
-  // const isCodeValid = await getIsPasswordValid(
-  //   body.code,
-  //   user?.codeActivate?.code || '',
-  // );
-
-  // // проверяю не истекло ли время действия кода
-  // const expiresAt = user?.codeActivate?.expiresAt;
-
-  // if (expiresAt && Date.parse(expiresAt.toString()) < Date.now()) {
-  //   console.log('время истекло');
-  //   return response
-  //     .status(401)
-  //     .json({ message: 'Время действия кода истекло' });
-  // }
-
-  // if (isCodeValid) {
-  //   console.log('валидный код');
-  //   await isActivatedUser(body.email);
-  //   await resetAuthAttempts(user?.id || '');
-  // }
-
-  // if (!isCodeValid) {
-  //   const count = await incrementAuthAttempts(user?.id || '');
-
-  //   if (count.attempts === 3) {
-  //     return response.status(429).json({
-  //       message:
-  //         'Слишком много неудачных попыток. Пожалуйста, попробуйте позже.',
-  //     });
-  //   }
-  //   return response.status(401).json({ message: 'Неверный код' });
-  // }
-  // return response.status(200).json({ message: 'Код успешно проверен' });
 }

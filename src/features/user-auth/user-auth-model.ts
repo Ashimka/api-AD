@@ -1,4 +1,5 @@
 import type { AuthCode } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 
 import { prisma } from '~/../lib/prisma.js';
 
@@ -20,11 +21,20 @@ export async function saveAuthCodeToDatabase(
       },
     });
 
+    if (!result) {
+      throw new Error(
+        'Не удалось создать или найти код авторизации в базе данных',
+      );
+    }
+
     return result;
   } catch (error) {
-    console.error('Database error in saveAuthCodeToDatabase:', error);
-
-    throw error;
+    if (
+      error instanceof PrismaClientKnownRequestError &&
+      error.code === 'ECONNREFUSED'
+    ) {
+      console.log('Ошибка подключения к базе данных');
+    }
   }
 }
 
