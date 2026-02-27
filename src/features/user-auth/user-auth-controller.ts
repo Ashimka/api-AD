@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 
 import { validateBody } from '~/middleware/validate.js';
+import { sendActivationCode } from '~/utils/email-service.js';
 import { generateSixDigitCode } from '~/utils/index.js';
 
 import {
@@ -39,6 +40,17 @@ export async function signInOrCreateUser(request: Request, response: Response) {
   const hashedCode = await hashPassword(code);
 
   await saveAuthCodeToDatabase(hashedCode, user?.id);
+
+  // Отправляем код на email
+  try {
+    await sendActivationCode(body.email, code);
+  } catch (error) {
+    console.error('Ошибка при отправке email:', error);
+    return response.status(500).json({
+      message: 'Код сохранён, но не удалось отправить на email',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 
   return response
     .status(201)
