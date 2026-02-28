@@ -24,10 +24,10 @@ export function generateJwtToken(user: JwtPayload) {
     email: user.email,
   };
   const accessToken = jwt.sign(tokenPayload, config.jwtSecret, {
-    expiresIn: 60 * 60 * 24 * 30, // 1 месяц
+    expiresIn: '10m', // 10 минут
   });
   const refreshToken = jwt.sign(tokenPayload, config.jwtSecret, {
-    expiresIn: 60 * 60 * 24 * 365, // 1 год
+    expiresIn: 60 * 60 * 24 * 30, // 1 месяц
   });
   return { accessToken, refreshToken };
 }
@@ -87,11 +87,11 @@ export function refreshAccessToken(refreshToken: string): {
   const tokenPayload = { id: decoded.id, email: decoded.email };
 
   const newAccessToken = jwt.sign(tokenPayload, config.jwtSecret, {
-    expiresIn: 60 * 60 * 24 * 30, // 1 месяц
+    expiresIn: '10m', // 10 минут
   });
 
   const newRefreshToken = jwt.sign(tokenPayload, config.jwtSecret, {
-    expiresIn: 60 * 60 * 24 * 365, // 1 год
+    expiresIn: 60 * 60 * 24 * 30, // 1 месяц
   });
 
   return { accessToken: newAccessToken, refreshToken: newRefreshToken };
