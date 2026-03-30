@@ -1,5 +1,6 @@
 import type { User } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
 
 import { config } from '~/config/index.js';
@@ -65,7 +66,7 @@ const isTokenType = (
 };
 
 export function getJwtTokenFromHeaders(request: Request): jwt.JwtPayload {
-  const header = request.headers.get('Authorization');
+  const header = request.headers.authorization;
   const token = header?.split(' ')[1];
 
   if (!token) {
