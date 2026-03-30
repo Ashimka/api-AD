@@ -14,6 +14,7 @@ import {
   generateJwtToken,
   getIsPasswordValid,
   hashPassword,
+  refreshAccessToken,
 } from './user-auth-helpers.js';
 import {
   incrementAuthAttempts,
@@ -113,4 +114,31 @@ export async function verifyEmailCode(request: Request, response: Response) {
   }
 
   return response.status(401).json({ message: 'Неверный код' });
+}
+
+export async function getRefreshAccessToken(
+  request: Request,
+  response: Response,
+) {
+  const body = await validateBody(
+    z.object({
+      refreshToken: z
+        .string()
+        .trim()
+        .nonempty({ message: 'Refresh token is required' }),
+    }),
+    request,
+    response,
+  );
+
+  try {
+    const { refreshToken } = body;
+
+    const tokens = refreshAccessToken(refreshToken);
+    console.log({ tokens });
+
+    return response.status(200).json({ tokens });
+  } catch (error) {
+    return response.status(401).json({ message: 'Invalid refresh token' });
+  }
 }

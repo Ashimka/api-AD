@@ -6,6 +6,8 @@ import { config } from '~/config/index.js';
 import { AuthenticationError } from '~/errors/index.js';
 
 type JwtPayload = Pick<User, 'id' | 'email'>;
+type TokenType = 'access' | 'refresh';
+type JwtTokenPayload = JwtPayload & { tokenType: TokenType };
 
 export async function hashPassword(password: string) {
   return await bcrypt.hash(password, 10);
@@ -19,30 +21,47 @@ export async function getIsPasswordValid(
 }
 
 export function generateJwtToken(user: JwtPayload) {
-  const tokenPayload = {
+  const basePayload = {
     id: user.id,
     email: user.email,
   };
-  const accessToken = jwt.sign(tokenPayload, config.jwtSecret, {
-    expiresIn: '10m', // 10 минут
-  });
-  const refreshToken = jwt.sign(tokenPayload, config.jwtSecret, {
-    expiresIn: 60 * 60 * 24 * 30, // 1 месяц
-  });
+  const accessToken = jwt.sign(
+    { ...basePayload, tokenType: 'access' as const },
+    config.jwtSecret,
+    {
+      expiresIn: '10m', // 10 минут
+    },
+  );
+  const refreshToken = jwt.sign(
+    { ...basePayload, tokenType: 'refresh' as const },
+    config.jwtSecret,
+    {
+      expiresIn: 60 * 60 * 24 * 30, // 1 месяц
+    },
+  );
   return { accessToken, refreshToken };
 }
 
-const isTokenValid = (token: unknown): token is jwt.JwtPayload => {
+const isTokenValid = (token: unknown): token is JwtTokenPayload => {
   if (
     typeof token === 'object' &&
     token !== null &&
     'id' in token &&
-    'email' in token
+    'email' in token &&
+    'tokenType' in token &&
+    (token.tokenType === 'access' || token.tokenType === 'refresh')
   ) {
     return true;
   }
 
   return false;
+};
+
+const isTokenType = (
+  token: JwtTokenPayload,
+  tokenType: TokenType,
+): token is JwtTokenPayload & { tokenType: typeof tokenType } => {
+  return token.tokenType === tokenType;
 };
 
 export function getJwtTokenFromHeaders(request: Request): jwt.JwtPayload {
@@ -61,7 +80,7 @@ export function getJwtTokenFromHeaders(request: Request): jwt.JwtPayload {
     throw new AuthenticationError('Invalid or expired token');
   }
 
-  if (isTokenValid(decoded)) {
+  if (isTokenValid(decoded) && isTokenType(decoded, 'access')) {
     return decoded as jwt.JwtPayload;
   }
 
@@ -80,19 +99,27 @@ export function refreshAccessToken(refreshToken: string): {
     throw new AuthenticationError('Invalid or expired refresh token');
   }
 
-  if (!isTokenValid(decoded)) {
+  if (!isTokenValid(decoded) || !isTokenType(decoded, 'refresh')) {
     throw new AuthenticationError('Invalid refresh token payload');
   }
 
-  const tokenPayload = { id: decoded.id, email: decoded.email };
+  const basePayload = { id: decoded.id, email: decoded.email };
 
-  const newAccessToken = jwt.sign(tokenPayload, config.jwtSecret, {
-    expiresIn: '10m', // 10 минут
-  });
+  const newAccessToken = jwt.sign(
+    { ...basePayload, tokenType: 'access' as const },
+    config.jwtSecret,
+    {
+      expiresIn: '10m', // 10 минут
+    },
+  );
 
-  const newRefreshToken = jwt.sign(tokenPayload, config.jwtSecret, {
-    expiresIn: 60 * 60 * 24 * 30, // 1 месяц
-  });
+  const newRefreshToken = jwt.sign(
+    { ...basePayload, tokenType: 'refresh' as const },
+    config.jwtSecret,
+    {
+      expiresIn: 60 * 60 * 24 * 30, // 1 месяц
+    },
+  );
 
   return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 }
