@@ -41,7 +41,7 @@ model UserCarData {
   transmission String?
 
   user   User          @relation(fields: [userId], references: [id])
-  userId String        @unique @map("user_id")
+  userId String        @map("user_id")
   posts  CarPostData[]
 
   createdAt DateTime @default(now()) @map("created_at")

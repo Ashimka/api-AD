@@ -4,7 +4,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
 
-import config from '../prisma/prisma.config.js';
+import config from '../prisma.config.js';
 
 const pool = new Pool({
   connectionString: config.datasource?.url ?? process.env.DATABASE_URL!,
