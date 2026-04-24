@@ -7,6 +7,17 @@ import type { NextFunction, Request, Response } from 'express';
 
 import { AppError, DatabaseError } from '~/errors/index.js';
 
+function sendHttpError(
+  response: Response,
+  statusCode: 401 | 403 | 404 | 409,
+  message: string,
+) {
+  response.status(statusCode).json({
+    message,
+    statusCode,
+  });
+}
+
 /**
  * Проверяет, является ли ошибка ошибкой подключения к базе данных
  */
@@ -51,6 +62,26 @@ export function errorHandler(
   _next: NextFunction,
 ): void {
   if (error instanceof AppError) {
+    if (error.statusCode === 401) {
+      sendHttpError(response, 401, error.message);
+      return;
+    }
+
+    if (error.statusCode === 403) {
+      sendHttpError(response, 403, error.message);
+      return;
+    }
+
+    if (error.statusCode === 404) {
+      sendHttpError(response, 404, error.message);
+      return;
+    }
+
+    if (error.statusCode === 409) {
+      sendHttpError(response, 409, error.message);
+      return;
+    }
+
     response.status(error.statusCode).json({
       message: error.message,
       statusCode: error.statusCode,

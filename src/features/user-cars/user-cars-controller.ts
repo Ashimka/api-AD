@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
+import { AuthenticationError } from '~/errors/index.js';
 import { getJwtTokenFromHeaders } from '~/features/user-auth/user-auth-helpers.js';
 import { validateBody } from '~/middleware/validate.js';
 import { createUserCarData } from './user-cars-model.js';
@@ -51,7 +52,7 @@ export async function createCar(request: Request, response: Response) {
   const userId =
     typeof tokenPayload.id === 'string' ? tokenPayload.id : undefined;
   if (!userId) {
-    return response.status(401).json({ message: 'Неверный токен' });
+    throw new AuthenticationError('Неверный токен');
   }
 
   const car = await createUserCarData({ ...body, userId });

@@ -40,6 +40,26 @@ export class AuthorizationError extends AppError {
 }
 
 /**
+ * Ошибка "не найдено" (404 Not Found)
+ */
+export class NotFoundError extends AppError {
+  constructor(message: string = 'Resource not found') {
+    super(message, 404, true);
+    Object.setPrototypeOf(this, NotFoundError.prototype);
+  }
+}
+
+/**
+ * Ошибка конфликта (409 Conflict)
+ */
+export class ConflictError extends AppError {
+  constructor(message: string = 'Resource conflict') {
+    super(message, 409, true);
+    Object.setPrototypeOf(this, ConflictError.prototype);
+  }
+}
+
+/**
  * Ошибка валидации (400 Bad Request)
  */
 export class ValidationError extends AppError {

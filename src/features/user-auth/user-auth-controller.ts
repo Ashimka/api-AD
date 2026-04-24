@@ -1,5 +1,11 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
+import {
+  AuthenticationError,
+  AuthorizationError,
+  ConflictError,
+  NotFoundError,
+} from '~/errors/index.js';
 
 import { validateBody } from '~/middleware/validate.js';
 import { sendActivationCode } from '~/utils/email-service.js';
@@ -79,16 +85,14 @@ export async function verifyEmailCode(request: Request, response: Response) {
   const user = await retrieveUserFromDatabaseByEmail(body.email);
 
   if (!user || !user.codeActivate) {
-    return response.status(404).json({ message: 'Пользователь не найден' });
+    throw new NotFoundError('Пользователь не найден');
   }
 
   const { code: hashedCode, expiresAt } = user.codeActivate;
 
   // 2. Проверяем срок действия кода
   if (expiresAt && Date.parse(expiresAt.toString()) < Date.now()) {
-    return response
-      .status(401)
-      .json({ message: 'Время действия кода истекло' });
+    throw new AuthenticationError('Время действия кода истекло');
   }
 
   // 3. Проверяем валидность кода
@@ -108,12 +112,12 @@ export async function verifyEmailCode(request: Request, response: Response) {
   const count = await incrementAuthAttempts(user.id);
 
   if (count.attempts >= 3) {
-    return response.status(429).json({
-      message: 'Слишком много неудачных попыток. Пожалуйста, попробуйте позже.',
-    });
+    throw new AuthorizationError(
+      'Слишком много неудачных попыток. Пожалуйста, попробуйте позже.',
+    );
   }
 
-  return response.status(401).json({ message: 'Неверный код' });
+  throw new AuthenticationError('Неверный код');
 }
 
 export async function getRefreshAccessToken(
@@ -131,14 +135,14 @@ export async function getRefreshAccessToken(
     response,
   );
 
-  try {
-    const { refreshToken } = body;
+  const { refreshToken } = body;
 
-    const tokens = refreshAccessToken(refreshToken);
-    console.log({ tokens });
-
-    return response.status(200).json({ tokens });
-  } catch (error) {
-    return response.status(401).json({ message: 'Invalid refresh token' });
+  if (!refreshToken) {
+    throw new ConflictError('Refresh token is required');
   }
+
+  const tokens = refreshAccessToken(refreshToken);
+  console.log({ tokens });
+
+  return response.status(200).json({ tokens });
 }
