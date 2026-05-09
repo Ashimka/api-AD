@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+
 import { prisma } from '~/../lib/prisma.js';
+import { throwNormalizedError } from '~/middleware/error-handler.js';
 
 export async function createUserCarData(
   data: Prisma.UserCarDataUncheckedCreateInput,
@@ -10,12 +11,6 @@ export async function createUserCarData(
       data,
     });
   } catch (error) {
-    if (
-      error instanceof PrismaClientKnownRequestError &&
-      error.code === 'ECONNREFUSED'
-    ) {
-      console.log('Ошибка подключения к базе данных');
-    }
-    console.log('error', error);
+    throwNormalizedError(error);
   }
 }

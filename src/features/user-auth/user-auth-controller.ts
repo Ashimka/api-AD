@@ -1,12 +1,12 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
+
 import {
   AuthenticationError,
   AuthorizationError,
   ConflictError,
   NotFoundError,
 } from '~/errors/index.js';
-
 import { validateBody } from '~/middleware/validate.js';
 import { sendActivationCode } from '~/utils/email-service.js';
 import { generateSixDigitCode } from '~/utils/index.js';

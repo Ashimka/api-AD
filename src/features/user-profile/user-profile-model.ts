@@ -1,36 +1,36 @@
 import type { User } from '@prisma/client';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 
 import { prisma } from '~/../lib/prisma.js';
+import { AppError } from '~/errors/index.js';
+import { throwNormalizedError } from '~/middleware/error-handler.js';
 
 export async function saveUserToDatabase(email: User['email']) {
   try {
-    const user = await prisma.user.upsert({
+    const existingUser = await prisma.user.findUnique({
       where: { email },
-      update: {},
-      create: { email },
+    });
+
+    if (existingUser) {
+      return existingUser;
+    }
+
+    const user = await prisma.user.create({
+      data: { email },
     });
 
     if (!user) {
-      throw new Error(
-        'Не удалось создать или найти пользователя в базе данных',
-      );
+      throw new AppError('Ошибка при авторизации пользователя', 503);
     }
 
     return user;
   } catch (error) {
-    if (
-      error instanceof PrismaClientKnownRequestError &&
-      error.code === 'ECONNREFUSED'
-    ) {
-      console.log('Ошибка подключения к базе данных');
-    }
+    throwNormalizedError(error);
   }
 }
 
 export async function retrieveUserFromDatabaseByEmail(email: User['email']) {
   try {
-    const user = await prisma.user.findUnique({
+    return await prisma.user.findUnique({
       where: { email },
       select: {
         email: true,
@@ -43,27 +43,18 @@ export async function retrieveUserFromDatabaseByEmail(email: User['email']) {
         },
       },
     });
-
-    if (!user) {
-      throw new Error(
-        'Не удалось создать или найти пользователя в базе данных',
-      );
-    }
-
-    return user;
   } catch (error) {
-    if (
-      error instanceof PrismaClientKnownRequestError &&
-      error.code === 'ECONNREFUSED'
-    ) {
-      console.log('Ошибка подключения к базе данных');
-    }
+    throwNormalizedError(error);
   }
 }
 
 export async function isActivatedUser(email: User['email']) {
-  return await prisma.user.update({
-    where: { email },
-    data: { isActivated: true },
-  });
+  try {
+    return await prisma.user.update({
+      where: { email },
+      data: { isActivated: true },
+    });
+  } catch (error) {
+    throwNormalizedError(error);
+  }
 }

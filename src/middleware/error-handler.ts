@@ -5,7 +5,12 @@ import {
 } from '@prisma/client-runtime-utils';
 import type { NextFunction, Request, Response } from 'express';
 
-import { AppError, DatabaseError } from '~/errors/index.js';
+import {
+  AppError,
+  ConflictError,
+  DatabaseError,
+  NotFoundError,
+} from '~/errors/index.js';
 
 function sendHttpError(
   response: Response,
@@ -51,6 +56,63 @@ function isDatabaseConnectionError(error: unknown): error is Error {
 }
 
 /**
+ * Приводит любую ошибку к AppError так же, как это делает HTTP errorHandler.
+ * Используйте в слое модели: `catch (e) { throwNormalizedError(e); }`
+ */
+export function classifyError(error: unknown): AppError {
+  if (error instanceof AppError) {
+    return error;
+  }
+
+  if (error instanceof PrismaClientInitializationError) {
+    console.error('Database connection error:', error);
+    return new DatabaseError(
+      'Не удалось подключиться к базе данных. Пожалуйста, попробуйте позже.',
+    );
+  }
+
+  if (error instanceof PrismaClientRustPanicError) {
+    console.error('Database panic error:', error);
+    return new DatabaseError(
+      'Критическая ошибка базы данных. Пожалуйста, попробуйте позже.',
+    );
+  }
+
+  if (error instanceof PrismaClientKnownRequestError) {
+    console.error('Prisma error:', error.code, error.message);
+
+    if (error.code === 'P2002') {
+      return new ConflictError('Запись с такими данными уже существует');
+    }
+
+    if (error.code === 'P2025') {
+      return new NotFoundError('Запись не найдена');
+    }
+
+    return new DatabaseError('Ошибка при работе с базой данных');
+  }
+
+  if (isDatabaseConnectionError(error)) {
+    console.error('Database connection error:', error);
+    return new DatabaseError(
+      'Не удалось подключиться к базе данных. Пожалуйста, попробуйте позже.',
+    );
+  }
+
+  if (error instanceof Error) {
+    console.error('Unexpected error:', error.message);
+    return new AppError('Internal Server Error', 500);
+  }
+
+  console.error('Unknown error:', error);
+  return new AppError('Internal Server Error', 500);
+}
+
+export function throwNormalizedError(error: unknown): never {
+  throw classifyError(error);
+}
+
+/**
  * Глобальный обработчик ошибок для Express
  * Обрабатывает кастомные ошибки (AppError и его подклассы)
  * и отправляет правильные HTTP-ответы с соответствующими статус-кодами
@@ -61,117 +123,30 @@ export function errorHandler(
   response: Response,
   _next: NextFunction,
 ): void {
-  if (error instanceof AppError) {
-    if (error.statusCode === 401) {
-      sendHttpError(response, 401, error.message);
-      return;
-    }
+  const err = classifyError(error);
 
-    if (error.statusCode === 403) {
-      sendHttpError(response, 403, error.message);
-      return;
-    }
-
-    if (error.statusCode === 404) {
-      sendHttpError(response, 404, error.message);
-      return;
-    }
-
-    if (error.statusCode === 409) {
-      sendHttpError(response, 409, error.message);
-      return;
-    }
-
-    response.status(error.statusCode).json({
-      message: error.message,
-      statusCode: error.statusCode,
-    });
+  if (err.statusCode === 401) {
+    sendHttpError(response, 401, err.message);
     return;
   }
 
-  // Обработка ошибок Prisma - сначала проверяем конкретные типы
-  if (error instanceof PrismaClientInitializationError) {
-    console.error('Database connection error:', error);
-    const dbError = new DatabaseError(
-      'Не удалось подключиться к базе данных. Пожалуйста, попробуйте позже.',
-    );
-    response.status(dbError.statusCode).json({
-      message: dbError.message,
-      statusCode: dbError.statusCode,
-    });
+  if (err.statusCode === 403) {
+    sendHttpError(response, 403, err.message);
     return;
   }
 
-  if (error instanceof PrismaClientRustPanicError) {
-    console.error('Database panic error:', error);
-    const dbError = new DatabaseError(
-      'Критическая ошибка базы данных. Пожалуйста, попробуйте позже.',
-    );
-    response.status(dbError.statusCode).json({
-      message: dbError.message,
-      statusCode: dbError.statusCode,
-    });
+  if (err.statusCode === 404) {
+    sendHttpError(response, 404, err.message);
     return;
   }
 
-  if (error instanceof PrismaClientKnownRequestError) {
-    console.error('Prisma error:', error.code, error.message);
-
-    // Обработка специфичных ошибок Prisma
-    if (error.code === 'P2002') {
-      // Unique constraint violation
-      response.status(409).json({
-        message: 'Запись с такими данными уже существует',
-        statusCode: 409,
-      });
-      return;
-    }
-
-    if (error.code === 'P2025') {
-      // Record not found
-      response.status(404).json({
-        message: 'Запись не найдена',
-        statusCode: 404,
-      });
-      return;
-    }
-
-    // Общая ошибка базы данных
-    const dbError = new DatabaseError('Ошибка при работе с базой данных');
-    response.status(dbError.statusCode).json({
-      message: dbError.message,
-      statusCode: dbError.statusCode,
-    });
+  if (err.statusCode === 409) {
+    sendHttpError(response, 409, err.message);
     return;
   }
 
-  // Проверка на другие ошибки подключения
-  if (isDatabaseConnectionError(error)) {
-    console.error('Database connection error:', error);
-    const dbError = new DatabaseError(
-      'Не удалось подключиться к базе данных. Пожалуйста, попробуйте позже.',
-    );
-    response.status(dbError.statusCode).json({
-      message: dbError.message,
-      statusCode: dbError.statusCode,
-    });
-    return;
-  }
-
-  // Для неожиданных ошибок
-  if (error instanceof Error) {
-    console.error('Unexpected error:', error.message);
-    response.status(500).json({
-      message: 'Internal Server Error',
-      statusCode: 500,
-    });
-    return;
-  }
-
-  // Для неизвестных типов ошибок
-  console.error('Unknown error:', error);
-  response.status(500).json({
-    message: 'Internal Server Error',
-    statusCode: 500,
+  response.status(err.statusCode).json({
+    message: err.message,
+    statusCode: err.statusCode,
   });
 }
