@@ -28,3 +28,13 @@ export async function getAllCarsPostByCarId(carId: string) {
     throwNormalizedError(error);
   }
 }
+
+export async function updatePostCars(
+  id: string,
+  data: Prisma.CarPostDataUpdateInput,
+) {
+  return prisma.carPostData.update({
+    where: { id },
+    data,
+  });
+}
