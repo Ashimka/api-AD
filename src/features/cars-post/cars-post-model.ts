@@ -13,17 +13,36 @@ export async function createPostCars(
   }
 }
 
-export async function getAllCarsPostByCarId(carId: string) {
+export async function getAllPostByCarId(carId: string, page = 1, limit = 10) {
   try {
-    const cars = await prisma.carPostData.findMany({
-      where: { userCarDataId: carId },
-    });
+    const skip = (page - 1) * limit;
+    const [cars, total] = await Promise.all([
+      prisma.carPostData.findMany({
+        where: {
+          userCarDataId: carId,
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
 
-    if (cars.length === 0) {
-      throw new Error('Нет записей');
-    }
-
-    return cars;
+      prisma.carPostData.count({
+        where: {
+          userCarDataId: carId,
+        },
+      }),
+    ]);
+    return {
+      data: cars,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   } catch (error) {
     throwNormalizedError(error);
   }

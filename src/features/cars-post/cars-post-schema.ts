@@ -3,6 +3,9 @@ import z from 'zod';
 export const idParamsSchema = z.object({
   id: z.string().regex(/^c[\da-z]{24}$/, 'Некорректный id записи'),
 });
+export const idCarsParamsSchema = z.object({
+  carId: z.string().regex(/^c[\da-z]{24}$/, 'Некорректный id втомобиля'),
+});
 
 export const createPostCarSchema = z.object({
   type: z
