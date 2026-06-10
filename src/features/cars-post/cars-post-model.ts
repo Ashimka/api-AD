@@ -52,8 +52,22 @@ export async function updatePostCars(
   id: string,
   data: Prisma.CarPostDataUpdateInput,
 ) {
-  return prisma.carPostData.update({
-    where: { id },
-    data,
-  });
+  try {
+    return prisma.carPostData.update({
+      where: { id },
+      data,
+    });
+  } catch (error) {
+    throwNormalizedError(error);
+  }
+}
+
+export async function deletePostCarById(id: string) {
+  try {
+    return prisma.carPostData.delete({
+      where: { id },
+    });
+  } catch (error) {
+    throwNormalizedError(error);
+  }
 }

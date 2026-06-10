@@ -9,6 +9,7 @@ import {
 
 import {
   createPostCars,
+  deletePostCarById,
   getAllPostByCarId,
   updatePostCars,
 } from './cars-post-model.js';
@@ -54,4 +55,11 @@ export async function getAllPostCar(request: Request, response: Response) {
   const posts = await getAllPostByCarId(carId, query.page, query.limit);
 
   return response.status(200).json(posts);
+}
+
+export async function deletePostCar(request: Request, response: Response) {
+  const { id } = await validateParams(idParamsSchema, request, response);
+  await deletePostCarById(id);
+
+  return response.status(200).json({ message: 'Запись удалена' });
 }
